@@ -1,23 +1,60 @@
 /* eslint-disable no-console */
 import React, { useState } from "react";
+import axios from "axios";
 
-const Form = ({ isSubmit }) => {
+const Form = ({ isSubmit, isLoading, setOutput }) => {
   const [longUrl, setLongUrl] = useState("");
+  const [slug, setSlug] = useState("");
 
-  const handleInput = (e) => {
+  const handleOutput = (data, error) => {
+    setOutput({
+      data: data,
+      error: error,
+    });
+  };
+
+  const handleUrlInput = (e) => {
     e.preventDefault();
-    console.log(e.target.value);
     setLongUrl(e.target.value);
+  };
+
+  const handleSlugInput = (e) => {
+    e.preventDefault();
+    setSlug(e.target.value);
   };
 
   const handleSubmit = (e) => {
     try {
       e.preventDefault();
-      setLongUrl(longUrl);
-      console.log(longUrl);
+      const url = process.env.API_URI;
+      console.log(longUrl, slug);
       if (longUrl != "") {
-        isSubmit(true);
+        isSubmit(true); // request submitted
+        isLoading(true); // loader on
+        axios({
+          method: "post",
+          url,
+          data: {
+            longUrl,
+            slug,
+          },
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        })
+          .then((data) => {
+            isLoading(false); // request complete loader-off
+            console.log(JSON.stringify(data));
+            handleOutput(JSON.stringify(data), false);
+          })
+          .catch((err) => {
+            isLoading(false); // request complete loader-off
+            console.error(err);
+
+            handleOutput(JSON.stringify(err), true);
+          });
       } else {
+        // TODO:: no input url - bad input notification
         isSubmit(false);
       }
     } catch (err) {
@@ -32,7 +69,14 @@ const Form = ({ isSubmit }) => {
         placeholder="Shorten URL"
         name="longUrl"
         value={longUrl}
-        onChange={handleInput}
+        onChange={handleUrlInput}
+      />
+      <input
+        type="text"
+        placeholder="Slug"
+        name="slug"
+        value={slug}
+        onChange={handleSlugInput}
       />
       <input type="submit" value="Shorten" />
     </form>
